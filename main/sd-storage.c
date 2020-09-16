@@ -50,7 +50,7 @@ Song *getSongs(int *count)
         memcpy(songs[i++].d, dir, sizeof(struct dirent));
     }
 
-    *count = file_count;
+    // *count = file_count;
     closedir(d);
 
     return songs;

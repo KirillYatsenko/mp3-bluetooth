@@ -2,7 +2,7 @@
     "env": {
         "MESSAGE":" MAC AND LINUX USERS!!!- change path from c:/... to ~/esp/... or as approirate for your enviroment",
         "IDF_TOOLS": "/home/kirill/.espressif/tools",
-        "IDF_PATH": "/home/kirill/Documents/esp/esp-idf"
+        "IDF_PATH": "/home/kirill/esp/esp-idf"
     },
     "configurations": [
         {

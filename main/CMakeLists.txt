@@ -1,4 +1,4 @@
-set(COMPONENT_SRCS "main.c" "src/sd-storage" )
-set(COMPONENT_ADD_INCLUDEDIRS "." "include")
-
-register_component()
+idf_component_register(SRCS "bt_app_core.c"
+                            "main.c"
+                            "sd-storage.c"
+                    INCLUDE_DIRS ".")
