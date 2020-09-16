@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := a2dp_source
+PROJECT_NAME := mp3_player
 
 include $(IDF_PATH)/make/project.mk
 

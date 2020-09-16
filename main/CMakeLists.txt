@@ -1,4 +1,4 @@
-idf_component_register(SRCS "bt_app_core.c"
+idf_component_register(SRCS "bluetooth/bt_app_core.c"
                             "main.c"
-                            "sd-storage.c"
-                    INCLUDE_DIRS ".")
+                            "storage/sd-storage.c"
+                    INCLUDE_DIRS "." "includes/")
