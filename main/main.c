@@ -93,6 +93,8 @@ static void bt_app_av_state_connecting(uint16_t event, void *param);
 static void bt_app_av_state_connected(uint16_t event, void *param);
 static void bt_app_av_state_disconnecting(uint16_t event, void *param);
 
+static void playNextSong();
+
 static esp_bd_addr_t s_peer_bda = {0};
 static uint8_t s_peer_bdname[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
 static int s_a2d_state = APP_AV_STATE_IDLE;
@@ -118,17 +120,26 @@ static char *bda2str(esp_bd_addr_t bda, char *str, size_t size)
 
 int m_sample = 0;
 
+Song *songs;
+int songsCount = 0;
+int songsIndx = -1;
+
 void app_main(void)
 {
     // ------------ MOUNT SD CARD ----------
 
-    int *count = 0;
-    getSongs(count);
+    songs = getSongs(&songsCount);
+    printf("songs count = %d\n", songsCount);
+
+    playNextSong();
+
+    // while(count-- && songs++)
+    // {
+    //     printf("Song path: %s\n", songs->fullpath);
+    //     printf("Song dir name: %s\n", songs->d->d_name);
+    // }
 
     // -------------------------------------------
-
-    m_sample = open("/sdcard/songs/sample.wav", O_RDONLY);
-    printf("SAMPLE = %d\n", m_sample);
 
     if (m_sample == -1)
     {
@@ -192,6 +203,25 @@ void app_main(void)
     esp_bt_pin_type_t pin_type = ESP_BT_PIN_TYPE_VARIABLE;
     esp_bt_pin_code_t pin_code;
     esp_bt_gap_set_pin(pin_type, 0, pin_code);
+}
+
+static void playNextSong()
+{
+    printf("songs index = %d\n", songsIndx);
+
+    if (++songsIndx == songsCount)
+        songsIndx = 0;
+
+    m_sample = open(songs[songsIndx].fullpath, O_RDONLY);
+    printf("SAMPLE = %d\n", m_sample);
+
+    if (m_sample == -1)
+    {
+        printf("Failed to open file with path = %s\n", songs[songsIndx].fullpath);
+        return;
+    }
+
+    printf("Opening song with name = %s\n", songs[songsIndx].d->d_name);
 }
 
 static bool get_name_from_eir(uint8_t *eir, uint8_t *bdname, uint8_t *bdname_len)
@@ -440,7 +470,6 @@ static void bt_app_a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     bt_app_work_dispatch(bt_app_av_sm_hdlr, event, param, sizeof(esp_a2d_cb_param_t), NULL);
 }
 
-
 static int32_t bt_app_a2d_data_cb(uint8_t *data, int32_t len)
 {
     if (len < 0 || data == NULL)
@@ -450,9 +479,10 @@ static int32_t bt_app_a2d_data_cb(uint8_t *data, int32_t len)
 
     size_t readSize;
     readSize = read(m_sample, data, len); //fwave is a file
-    if (readSize < len)
-    {                                                                //If get EOF, go to begin of the file
-        lseek(m_sample, 0x2C, SEEK_SET);                                //skip wav-header 44bytesт
+    if (readSize < len)                   // If get EOF, go to the next song
+    {
+        playNextSong();
+        lseek(m_sample, 0x2C, SEEK_SET);                 //skip wav-header 44bytesт
         readSize = read(m_sample, data, len - readSize); //read up
     }
 

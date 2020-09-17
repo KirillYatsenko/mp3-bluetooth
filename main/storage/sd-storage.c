@@ -17,6 +17,8 @@
 static const char *TAG = "SD";
 
 #define MOUNT_POINT "/sdcard"
+#define SONGS_FOLDER "/songs"
+
 #define SPI_DMA_CHAN 1
 
 #define PIN_NUM_MISO 19
@@ -36,7 +38,7 @@ Song *getSongs(int *count)
     unsigned int file_count = 0;
     DIR *d;
     struct dirent *dir;
-    d = opendir(MOUNT_POINT "/songs");
+    d = opendir(MOUNT_POINT SONGS_FOLDER);
     while (d && (dir = readdir(d)) != NULL && (dir->d_type == DT_REG))
         file_count++;
 
@@ -46,11 +48,20 @@ Song *getSongs(int *count)
     Song *songs = (Song *)malloc(file_count * sizeof(Song));
     while (d && (dir = readdir(d)) != NULL && (dir->d_type == DT_REG))
     {
-        songs[i].d = malloc(sizeof(struct dirent));
+        songs[i].fullpath = (char*)malloc(200 * sizeof(char));
+        songs[i].d = (struct dirent*)malloc(sizeof(struct dirent));
+
+        char path[100] = MOUNT_POINT "/" SONGS_FOLDER "/";
+        strcat(path, dir->d_name);
+
+        printf("dir->d_name = %s\n", dir->d_name);
+        printf("path = %s\n", path);
+        
+        memcpy(songs[i].fullpath, path, strlen(path) + 1);    
         memcpy(songs[i++].d, dir, sizeof(struct dirent));
     }
 
-    // *count = file_count;
+    *count = file_count;
     closedir(d);
 
     return songs;
