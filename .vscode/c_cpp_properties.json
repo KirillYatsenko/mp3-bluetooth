@@ -20,6 +20,8 @@
                 "${workspaceFolder}/build/config",
                 "${workspaceFolder}/build/bootloader/config",
                 "${workspaceFolder}/main/includes",
+                "${workspaceFolder}/main/includes/bt_core",
+                "${workspaceFolder}/main/includes/entities",
                 "${IDF_TOOLS}/xtensa-esp32-elf/esp32-2019r1-8.2.0/xtensa-esp32-elf/lib/gcc/xtensa-esp32-elf/8.2.0/include",
                 "${IDF_TOOLS}/xtensa-esp32-elf/esp32-2019r1-8.2.0/xtensa-esp32-elf/xtensa-esp32-elf/include",
                 "${IDF_TOOLS}/xtensa-esp32-elf/esp32-2019r1-8.2.0/xtensa-esp32-elf/xtensa-esp32-elf/include/c++/8.2.0",
