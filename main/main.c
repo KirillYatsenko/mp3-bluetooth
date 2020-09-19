@@ -17,15 +17,24 @@
 
 int app_main(void)
 {
-    // int songsCount = 0;
-    // getSongs(&songsCount);
-    // printf("songs count = %d\n", songsCount);
+    int songsCount = 0;
+    Song *songs = getSongs(&songsCount);
+    printf("songs count = %d\n", songsCount);
 
+    BtDevice *devices = NULL; 
     int devicesCount = 0;
-    BtDevice *devices = getAvaibleDevices(&devicesCount);
-    printf("device count = %d\n",devicesCount);
+    while (devicesCount == 0)
+        devices = getAvaibleDevices(&devicesCount);
+
+    printf("device count = %d\n", devicesCount);
     for (int i = 0; i < devicesCount; i++)
         printf("device #%d - %s\n", i + 1, devices[i].name);
+
+    if (devicesCount > 0)
+    {
+        connectToDevice(&(devices[0]));
+        playSongs(songs, songsCount);
+    }
 
     return 0;
 }

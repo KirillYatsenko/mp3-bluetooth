@@ -8,6 +8,7 @@
   "files.associations": {
     "*.md": "markdown",
     "*.mdx": "tdx",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "*.ipp": "c"
   }
 }

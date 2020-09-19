@@ -33,6 +33,7 @@
 #include "bt_module.h"
 
 #define BT_AV_TAG "BT_AV"
+#define CUSTOM "CUSTOM"
 #define BT_RC_CT_TAG "RCCT"
 
 // AVRCP used transaction label
@@ -69,7 +70,7 @@ enum
 #define BT_APP_HEART_BEAT_EVT (0xff00)
 
 #define MAX_AVAIBLE_DEVICES 5
-#define BT_DISCOVERY_PERIOD_MS 60000
+#define BT_DISCOVERY_PERIOD_MS 20000
 
 /// turn on bluetooth
 void enable_bluetooth(void);
@@ -102,7 +103,7 @@ static void bt_app_av_state_disconnecting(uint16_t event, void *param);
 
 static void enableBluetooth(void);
 static void playNextSong();
-static void saveDevice(char *deviceName);
+static void saveDevice(char *deviceName, esp_bd_addr_t *address);
 
 static esp_bd_addr_t s_peer_bda = {0};
 static uint8_t s_peer_bdname[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
@@ -141,28 +142,45 @@ BtDevice *getAvaibleDevices(int *deviceCount)
     return avaibleDevices;
 }
 
-static void saveDevice(char *deviceName)
+bool connectToDevice(BtDevice *btDevice)
 {
-    printf("saveDevice() called with deviceName = %s\n", deviceName);
-    printf("avaibleDevicesCount =  %d\n", avaibleDevicesCount);
+    ESP_LOGI(BT_AV_TAG, "Found a target device name %s", btDevice->name);
+    s_a2d_state = APP_AV_STATE_CONNECTING;
+    memcpy(s_peer_bda, btDevice->bt_address, ESP_BD_ADDR_LEN);
+    ESP_LOGI(BT_AV_TAG, "Connecting ...");
 
+    esp_a2d_source_connect(s_peer_bda);
+    return true;
+    // esp_bt_gap_cancel_discovery();
+}
+
+bool playSongs(Song *songsParam, uint8_t count)
+{
+    songs = songsParam;
+    songsCount = count;
+    songsIndx = -1;
+
+    playNextSong();
+
+    return true;
+}
+
+static void saveDevice(char *deviceName, esp_bd_addr_t *address)
+{
     if (avaibleDevicesCount == MAX_AVAIBLE_DEVICES)
         return;
 
     int deviceNameLength = 20;
     for (int i = 0; i < avaibleDevicesCount; i++)
     {
-        printf("comparing %s with %s\n", avaibleDevices[i].name, deviceName);
         if (strncmp(avaibleDevices[i].name, deviceName, deviceNameLength) == 0)
             return;
     }
 
-    printf("New device found: %s\n", deviceName);
-    printf("Saving: %s\n to index: %d\n", deviceName, avaibleDevicesCount);
+    avaibleDevices[avaibleDevicesCount].bt_address = malloc(sizeof(esp_bd_addr_t));
+    memcpy(avaibleDevices[avaibleDevicesCount].bt_address, address, sizeof(esp_bd_addr_t));
 
     avaibleDevices[avaibleDevicesCount].name = malloc(strlen(deviceName) * sizeof(char));
-    printf("malloced\n");
-
     strcpy(avaibleDevices[avaibleDevicesCount++].name, deviceName);
 }
 
@@ -356,23 +374,21 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     //     return;
     // }
 
-    /* search for device named "ESP_SPEAKER" in its extended inqury response */
     if (eir)
     {
         get_name_from_eir(eir, s_peer_bdname, NULL);
-        saveDevice((char *)s_peer_bdname);
+        saveDevice((char *)s_peer_bdname, &(param->disc_res.bda));
 
-        return;
-        if (strcmp((char *)s_peer_bdname, "AM61") != 0)
-        {
-            return;
-        }
+        // if (strcmp((char *)s_peer_bdname, "AM61") != 0)
+        // {
+        //     return;
+        // }
 
-        ESP_LOGI(BT_AV_TAG, "Found a target device, address %s, name %s", bda_str, s_peer_bdname);
-        s_a2d_state = APP_AV_STATE_DISCOVERED;
-        memcpy(s_peer_bda, param->disc_res.bda, ESP_BD_ADDR_LEN);
-        ESP_LOGI(BT_AV_TAG, "Cancel device discovery ...");
-        esp_bt_gap_cancel_discovery();
+        // ESP_LOGI(BT_AV_TAG, "Found a target device, address %s, name %s", bda_str, s_peer_bdname);
+        // s_a2d_state = APP_AV_STATE_DISCOVERED;
+        // memcpy(s_peer_bda, param->disc_res.bda, ESP_BD_ADDR_LEN);
+        // ESP_LOGI(BT_AV_TAG, "Cancel device discovery ...");
+        // esp_bt_gap_cancel_discovery();
     }
 }
 
@@ -607,6 +623,7 @@ static void bt_app_av_state_unconnected(uint16_t event, void *param)
 
 static void bt_app_av_state_connecting(uint16_t event, void *param)
 {
+    ESP_LOGI(CUSTOM, "bt_app_av_state_connecting called");
     esp_a2d_cb_param_t *a2d = NULL;
     switch (event)
     {
@@ -729,6 +746,7 @@ static void bt_app_av_media_proc(uint16_t event, void *param)
 
 static void bt_app_av_state_connected(uint16_t event, void *param)
 {
+    ESP_LOGI(CUSTOM, "a2dp connected");
     esp_a2d_cb_param_t *a2d = NULL;
     switch (event)
     {
