@@ -12,6 +12,10 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
+
 #include "storage.h"
 #include "bt_module.h"
 
@@ -21,20 +25,28 @@ int app_main(void)
     Song *songs = getSongs(&songsCount);
     printf("songs count = %d\n", songsCount);
 
-    BtDevice *devices = NULL; 
+    BtDevice *devices = NULL;
     int devicesCount = 0;
     while (devicesCount == 0)
-        devices = getAvaibleDevices(&devicesCount);
+    {
+        printf("coundn't find any devices\n");
+        devices = btGetAvaibleDevices(&devicesCount);
+    }
 
     printf("device count = %d\n", devicesCount);
     for (int i = 0; i < devicesCount; i++)
         printf("device #%d - %s\n", i + 1, devices[i].name);
 
+    printf("IsConnected = %d\n", btIsConnected());
+
     if (devicesCount > 0)
     {
-        connectToDevice(&(devices[0]));
-        playSongs(songs, songsCount);
+        btConnectToDevice(&(devices[0]));
+        btPlaySongs(songs, songsCount);
     }
+
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    printf("IsConnected = %d\n", btIsConnected());
 
     return 0;
 }

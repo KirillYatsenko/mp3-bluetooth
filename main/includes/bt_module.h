@@ -10,11 +10,11 @@ typedef struct
     esp_bd_addr_t *bt_address;
 } BtDevice;
 
-bool isConnected();
-BtDevice *getAvaibleDevices(int *deviceCount);
-bool connectToDevice(BtDevice *btDevice);
+bool btIsConnected();
+BtDevice *btGetAvaibleDevices(int *deviceCount);
+bool btConnectToDevice(BtDevice *btDevice);
 
-bool playSongs(Song *songsParam, uint8_t count);
-bool pauseSong();
+bool btPlaySongs(Song *songsParam, uint8_t count);
+bool btPauseSong();
 
 #endif

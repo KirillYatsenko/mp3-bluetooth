@@ -115,6 +115,7 @@ static uint32_t s_pkt_cnt = 0;
 static esp_avrc_rn_evt_cap_mask_t s_avrc_peer_rn_cap;
 static TimerHandle_t s_tmr;
 
+static bool BtEnabled = false;
 static BtDevice avaibleDevices[MAX_AVAIBLE_DEVICES];
 static int avaibleDevicesCount = 0;
 static int currentSongDescriptor = -1;
@@ -123,12 +124,15 @@ static int songsCount = 0;
 static int songsIndx = -1;
 static bool discovering = false;
 
-BtDevice *getAvaibleDevices(int *deviceCount)
+BtDevice *btGetAvaibleDevices(int *deviceCount)
 {
     avaibleDevicesCount = 0;
     discovering = 0;
 
-    enableBluetooth();
+    if(BtEnabled == false)
+        enableBluetooth();
+    
+    BtEnabled = true;
 
     ESP_LOGI(BT_AV_TAG, "Starting device discovery...");
     s_a2d_state = APP_AV_STATE_DISCOVERING;
@@ -142,7 +146,7 @@ BtDevice *getAvaibleDevices(int *deviceCount)
     return avaibleDevices;
 }
 
-bool connectToDevice(BtDevice *btDevice)
+bool btConnectToDevice(BtDevice *btDevice)
 {
     ESP_LOGI(BT_AV_TAG, "Found a target device name %s", btDevice->name);
     s_a2d_state = APP_AV_STATE_CONNECTING;
@@ -154,7 +158,7 @@ bool connectToDevice(BtDevice *btDevice)
     // esp_bt_gap_cancel_discovery();
 }
 
-bool playSongs(Song *songsParam, uint8_t count)
+bool btPlaySongs(Song *songsParam, uint8_t count)
 {
     songs = songsParam;
     songsCount = count;
@@ -163,6 +167,11 @@ bool playSongs(Song *songsParam, uint8_t count)
     playNextSong();
 
     return true;
+}
+
+bool btIsConnected()
+{
+    return s_a2d_state == APP_AV_STATE_CONNECTED;
 }
 
 static void saveDevice(char *deviceName, esp_bd_addr_t *address)
@@ -367,12 +376,12 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
         }
     }
 
-    // /* search for device with MAJOR service class as "rendering" in COD */
-    // if (!esp_bt_gap_is_valid_cod(cod) ||
-    //     !(esp_bt_gap_get_cod_srvc(cod) & ESP_BT_COD_SRVC_RENDERING))
-    // {
-    //     return;
-    // }
+    /* search for device with MAJOR service class as "rendering" in COD */
+    if (!esp_bt_gap_is_valid_cod(cod) ||
+        !(esp_bt_gap_get_cod_srvc(cod) & ESP_BT_COD_SRVC_RENDERING))
+    {
+        return;
+    }
 
     if (eir)
     {
