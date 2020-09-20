@@ -14,7 +14,8 @@ bool btIsConnected();
 BtDevice *btGetAvaibleDevices(int *deviceCount);
 bool btConnectToDevice(BtDevice *btDevice);
 
-bool btPlaySongs(Song *songsParam, uint8_t count);
-bool btPauseSong();
+bool btPlay(Song *songsParam, uint8_t count);
+bool btPause();
+bool btResume();
 
 #endif

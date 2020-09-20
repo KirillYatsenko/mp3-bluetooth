@@ -42,11 +42,17 @@ int app_main(void)
     if (devicesCount > 0)
     {
         btConnectToDevice(&(devices[0]));
-        btPlaySongs(songs, songsCount);
+        btPlay(songs, songsCount);
     }
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
     printf("IsConnected = %d\n", btIsConnected());
+
+    vTaskDelay(20000 / portTICK_PERIOD_MS);
+    printf("Pausing = %d\n", btPause());
+
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    printf("Resuming = %d\n", btResume());
 
     return 0;
 }

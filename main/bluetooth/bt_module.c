@@ -65,6 +65,7 @@ enum
     APP_AV_MEDIA_STATE_STARTING,
     APP_AV_MEDIA_STATE_STARTED,
     APP_AV_MEDIA_STATE_STOPPING,
+    APP_AV_MEDIA_STATE_SUSPENDING,
 };
 
 #define BT_APP_HEART_BEAT_EVT (0xff00)
@@ -129,9 +130,9 @@ BtDevice *btGetAvaibleDevices(int *deviceCount)
     avaibleDevicesCount = 0;
     discovering = 0;
 
-    if(BtEnabled == false)
+    if (BtEnabled == false)
         enableBluetooth();
-    
+
     BtEnabled = true;
 
     ESP_LOGI(BT_AV_TAG, "Starting device discovery...");
@@ -158,7 +159,7 @@ bool btConnectToDevice(BtDevice *btDevice)
     // esp_bt_gap_cancel_discovery();
 }
 
-bool btPlaySongs(Song *songsParam, uint8_t count)
+bool btPlay(Song *songsParam, uint8_t count)
 {
     songs = songsParam;
     songsCount = count;
@@ -172,6 +173,22 @@ bool btPlaySongs(Song *songsParam, uint8_t count)
 bool btIsConnected()
 {
     return s_a2d_state == APP_AV_STATE_CONNECTED;
+}
+
+bool btPause()
+{
+    esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_SUSPEND);
+    s_media_state = APP_AV_MEDIA_STATE_SUSPENDING;
+
+    return true;
+}
+
+bool btResume()
+{
+    esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
+    s_media_state = APP_AV_MEDIA_STATE_STARTING;
+
+    return true;
 }
 
 static void saveDevice(char *deviceName, esp_bd_addr_t *address)
