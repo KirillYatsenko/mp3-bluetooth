@@ -33,7 +33,7 @@
 #include "bt_module.h"
 
 #define BT_AV_TAG "BT_AV"
-#define CUSTOM "CUSTOM"
+#define BT_CUSTOM_TAG "CUSTOM"
 #define BT_RC_CT_TAG "RCCT"
 
 // AVRCP used transaction label
@@ -72,6 +72,9 @@ enum
 
 #define MAX_AVAIBLE_DEVICES 5
 #define BT_DISCOVERY_PERIOD_MS 20000
+#define NVS_NAMESPACE "namespace"
+#define NVS_ADDRESS_KEY "address"
+#define NVS_DEVICE_NAME_KEY "devicename"
 
 /// turn on bluetooth
 void enable_bluetooth(void);
@@ -102,9 +105,10 @@ static void bt_app_av_state_connecting(uint16_t event, void *param);
 static void bt_app_av_state_connected(uint16_t event, void *param);
 static void bt_app_av_state_disconnecting(uint16_t event, void *param);
 
-static void enableBluetooth(void);
 static void playNextSong();
-static void saveDevice(char *deviceName, esp_bd_addr_t *address);
+static void saveToAvaibleDevice(char *deviceName, esp_bd_addr_t *address);
+static BtDevice *getConnectedDeviceFromNvs();
+static void saveConnectedDeviceToNvs(char *deviceName, esp_bd_addr_t *address);
 
 static esp_bd_addr_t s_peer_bda = {0};
 static uint8_t s_peer_bdname[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
@@ -191,7 +195,62 @@ bool btResume()
     return true;
 }
 
-static void saveDevice(char *deviceName, esp_bd_addr_t *address)
+static void saveConnectedDeviceToNvs(char *deviceName, esp_bd_addr_t *address)
+{
+    printf("saveConnectedDeviceToNvs called, deviceName = %s\n", deviceName);
+
+    nvs_handle handle;
+    ESP_ERROR_CHECK(nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle));
+
+    ESP_ERROR_CHECK(nvs_set_blob(handle, NVS_ADDRESS_KEY, (void *)address, sizeof(esp_bd_addr_t)));
+    ESP_ERROR_CHECK(nvs_set_str(handle, NVS_DEVICE_NAME_KEY, deviceName));
+    ESP_ERROR_CHECK(nvs_commit(handle));
+}
+
+static BtDevice *getConnectedDeviceFromNvs()
+{
+    ESP_LOGI(BT_CUSTOM_TAG, "getConnectedDeviceFromNvs called");
+
+    nvs_handle handle;
+    ESP_ERROR_CHECK(nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle));
+
+    char deviceName[50];
+    size_t deviceNameLength = 50;
+
+    esp_bd_addr_t address;
+    size_t addressSize = sizeof(esp_bd_addr_t);
+
+    esp_err_t resultAddress = nvs_get_blob(handle, NVS_ADDRESS_KEY, (void *)&address, &addressSize);
+    nvs_get_str(handle, NVS_DEVICE_NAME_KEY, deviceName, &deviceNameLength);
+
+    switch (resultAddress)
+    {
+    case ESP_ERR_NOT_FOUND:
+    case ESP_ERR_NVS_NOT_FOUND:
+        ESP_LOGI(BT_CUSTOM_TAG, "no saved bt devices in nvs");
+        return NULL;
+        break;
+    case ESP_OK:
+    {
+        BtDevice *btDevice = (BtDevice *)malloc(sizeof(BtDevice));
+
+        btDevice->bt_address = (esp_bd_addr_t *)malloc(sizeof(esp_bd_addr_t));
+        memcpy(btDevice->bt_address, address, sizeof(esp_bd_addr_t));
+
+        btDevice->name = (char *)malloc(deviceNameLength);
+        strcpy(btDevice->name, deviceName);
+
+        return btDevice;
+    }
+    default:
+        ESP_LOGE(BT_CUSTOM_TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(resultAddress));
+        break;
+    }
+
+    return NULL;
+}
+
+static void saveToAvaibleDevice(char *deviceName, esp_bd_addr_t *address)
 {
     if (avaibleDevicesCount == MAX_AVAIBLE_DEVICES)
         return;
@@ -223,27 +282,8 @@ static char *bda2str(esp_bd_addr_t bda, char *str, size_t size)
     return str;
 }
 
-static void enableBluetooth(void)
+void enableBluetooth(void)
 {
-    // ------------ MOUNT SD CARD ----------
-
-    // songs = getSongs(&songsCount);
-    // printf("songs count = %d\n", songsCount);
-    // playNextSong();
-
-    // // while(count-- && songs++)
-    // // {
-    // //     printf("Song path: %s\n", songs->fullpath);
-    // //     printf("Song dir name: %s\n", songs->d->d_name);
-    // // }
-
-    // // -------------------------------------------
-
-    // if (currentSongDescriptor == -1)
-    // {
-    //     return;
-    // }
-
     // Initialize NVS.
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -286,6 +326,10 @@ static void enableBluetooth(void)
 
     /* Bluetooth device name, connection mode and profile set up */
     bt_app_work_dispatch(bt_av_hdl_stack_evt, BT_APP_EVT_STACK_UP, NULL, 0, NULL);
+
+    BtDevice *device = getConnectedDeviceFromNvs();
+    if (device != NULL)
+        btConnectToDevice(device);
 
 #if (CONFIG_BT_SSP_ENABLED == true)
     /* Set default parameters for Secure Simple Pairing */
@@ -403,7 +447,7 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     if (eir)
     {
         get_name_from_eir(eir, s_peer_bdname, NULL);
-        saveDevice((char *)s_peer_bdname, &(param->disc_res.bda));
+        saveToAvaibleDevice((char *)s_peer_bdname, &(param->disc_res.bda));
 
         // if (strcmp((char *)s_peer_bdname, "AM61") != 0)
         // {
@@ -649,7 +693,7 @@ static void bt_app_av_state_unconnected(uint16_t event, void *param)
 
 static void bt_app_av_state_connecting(uint16_t event, void *param)
 {
-    ESP_LOGI(CUSTOM, "bt_app_av_state_connecting called");
+    ESP_LOGI(BT_CUSTOM_TAG, "bt_app_av_state_connecting called");
     esp_a2d_cb_param_t *a2d = NULL;
     switch (event)
     {
@@ -662,6 +706,8 @@ static void bt_app_av_state_connecting(uint16_t event, void *param)
             s_a2d_state = APP_AV_STATE_CONNECTED;
             s_media_state = APP_AV_MEDIA_STATE_IDLE;
             esp_bt_gap_set_scan_mode(ESP_BT_NON_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
+
+            saveConnectedDeviceToNvs("name", &s_peer_bda);
         }
         else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED)
         {
@@ -772,7 +818,7 @@ static void bt_app_av_media_proc(uint16_t event, void *param)
 
 static void bt_app_av_state_connected(uint16_t event, void *param)
 {
-    ESP_LOGI(CUSTOM, "a2dp connected");
+    ESP_LOGI(BT_CUSTOM_TAG, "a2dp connected");
     esp_a2d_cb_param_t *a2d = NULL;
     switch (event)
     {

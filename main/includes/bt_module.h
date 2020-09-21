@@ -10,6 +10,8 @@ typedef struct
     esp_bd_addr_t *bt_address;
 } BtDevice;
 
+void enableBluetooth(void);
+
 bool btIsConnected();
 BtDevice *btGetAvaibleDevices(int *deviceCount);
 bool btConnectToDevice(BtDevice *btDevice);
