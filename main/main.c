@@ -18,16 +18,29 @@
 
 #include "storage.h"
 #include "bt_module.h"
+#include "display_module.h"
+
+void testDisplay();
 
 int app_main(void)
+{
+    testDisplay();
+    return 0;
+}
+
+void testDisplay()
+{
+    displayTest();
+}
+
+void testPlayer()
 {
     // printf("enabling bluetooth\n");
     // enableBluetooth();
 
-
     enableBluetooth();
     vTaskDelay(30000 / portTICK_PERIOD_MS);
-    
+
     int songsCount = 0;
     Song *songs = getSongs(&songsCount);
     printf("songs count = %d\n", songsCount);
@@ -49,7 +62,7 @@ int app_main(void)
     // if (devicesCount > 0)
     // {
     //     btConnectToDevice(&(devices[0]));
-        btPlay(songs, songsCount);
+    btPlay(songs, songsCount);
     // }
 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
@@ -60,6 +73,4 @@ int app_main(void)
 
     // vTaskDelay(10000 / portTICK_PERIOD_MS);
     // printf("Resuming = %d\n", btResume());
-
-    return 0;
 }

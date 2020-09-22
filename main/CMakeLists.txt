@@ -3,4 +3,6 @@ idf_component_register(SRCS
                             "storage/sd-storage.c"
                             "bluetooth/bt_app_core.c"
                             "bluetooth/bt_module.c"
+                            "display/u8g2_esp32_hal.c"
+                            "display/display_module.c"
                     INCLUDE_DIRS "." "includes/" )
