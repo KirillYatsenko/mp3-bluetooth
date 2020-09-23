@@ -18,7 +18,7 @@
 
 #include "storage.h"
 #include "bt_module.h"
-#include "display_module.h"
+#include "menu_module.h"
 
 void testDisplay();
 
@@ -30,7 +30,15 @@ int app_main(void)
 
 void testDisplay()
 {
-    displayTest();
+    menuDisplayMain();
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    printf("pressing down button one times\n");
+    menuPressDown();
+
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    printf("pressing up button two times\n");
+    menuPressUp();
+    menuPressUp();
 }
 
 void testPlayer()
