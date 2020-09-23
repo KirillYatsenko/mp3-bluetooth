@@ -13,5 +13,8 @@ void displayPrintHeader(char *header);
 void displayPrintItems(menuItem *items, uint8_t itemsCount);
 void displayScrollDown();
 void displayScrollUp();
+uint8_t displayGetSelectedItemIndx();
+void displayClearItemsArea();
+
 
 #endif

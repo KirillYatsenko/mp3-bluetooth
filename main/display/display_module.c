@@ -27,12 +27,15 @@ static bool displayStarted = false;
 
 static void displayStart();
 static void fillDisplay(menuItem firstItem, menuItem *secondItem);
-static void clearItemsArea();
+static void clearHeaderArea();
+void displayClearItemsArea();
 
 void displayPrintHeader(char *header)
 {
     if (displayStarted == false)
         displayStart();
+
+    clearHeaderArea();
 
     ESP_LOGI(TAG, "displayPrintItems called header = %s\n", header);
     u8g2_DrawStr(&u8g2, 6, 8, header);
@@ -91,7 +94,19 @@ void displayScrollUp()
         fillDisplay(menuItems[selectedItemIdx], NULL);
 }
 
-static void clearItemsArea()
+uint8_t displayGetSelectedItemIndx()
+{
+    return selectedItemIdx;
+}
+
+static void clearHeaderArea()
+{
+    ESP_LOGI(TAG, "clearHeaderArea called");
+    u8g2_DrawStr(&u8g2, 6, 8, "               ");
+    u8g2_SendBuffer(&u8g2);
+}
+
+void displayClearItemsArea()
 {
     u8g2_DrawStr(&u8g2, 2, 19, "              ");
     u8g2_DrawStr(&u8g2, 2, 27, "              ");
@@ -102,7 +117,7 @@ static void fillDisplay(menuItem firstItem, menuItem *secondItem)
 {
     ESP_LOGI(TAG, "fillDisplay called\n");
 
-    clearItemsArea();
+    displayClearItemsArea();
     char firstItemText[50];
     sprintf(firstItemText, "-> %s", firstItem.name);
 

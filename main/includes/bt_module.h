@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "esp_bt_defs.h"
 
+#include "storage.h"
+
 typedef struct
 {
     char *name;
