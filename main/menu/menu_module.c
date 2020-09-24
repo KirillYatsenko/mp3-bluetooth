@@ -3,9 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "menu_module.h"
 #include "display_module.h"
 #include "bt_module.h"
+#include "storage.h"
 
 typedef struct
 {
@@ -16,6 +21,10 @@ typedef struct
 } menu;
 
 static menu selectedMenu;
+static BtDevice *devices;
+
+void btConnectedCb(char *deviceName);
+void playSongsTask(void *param);
 static void openBluetoothMenu();
 static void connectToBdDevice();
 
@@ -62,31 +71,56 @@ static void openBluetoothMenu()
     displayClearItemsArea();
     displayPrintHeader("Scanning...");
 
-    // int devicesCount = 0;
-    // BtDevice *devices = btGetAvaibleDevices(&devicesCount);
+    int devicesCount = 0;
+    devices = btGetAvaibleDevices(&devicesCount, btConnectedCb);
 
-    // menuItem items[devicesCount];
+    menuItem items[devicesCount];
 
-    // printf("Devices found=%d\n", devicesCount);
+    printf("Devices found=%d\n", devicesCount);
 
-    // strcpy(selectedMenu.name, "Main");
-    // selectedMenu.menuItemsCount = devicesCount;
-    // selectedMenu.menuItems = realloc(selectedMenu.menuItems, sizeof(menuItem) * devicesCount);
+    strcpy(selectedMenu.name, "Main");
+    selectedMenu.menuItemsCount = devicesCount;
+    selectedMenu.menuItems = realloc(selectedMenu.menuItems, sizeof(menuItem) * devicesCount);
 
-    // for (int i = 0; i < devicesCount; i++)
-    // {
-    //     strcpy(items[i].name, devices[i].name);
-    //     items[i].onClick = connectToBdDevice;
-    // }
+    for (int i = 0; i < devicesCount; i++)
+    {
+        strcpy(items[i].name, devices[i].name);
+        items[i].data = i;
+        items[i].onClick = connectToBdDevice;
+    }
 
-    // memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * devicesCount);
+    memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * devicesCount);
 
-    // displayPrintHeader("Bluetooth devices");
-    // displayPrintItems(items, devicesCount);
+    displayPrintHeader("Devices");
+    displayPrintItems(items, devicesCount);
 }
 
 static void connectToBdDevice()
 {
     printf("connectToBdDevice called\n");
-    return;
+
+    uint8_t deviceIndx = displayGetSelectedItem().data;
+    BtDevice device = devices[deviceIndx];
+
+    btConnectToDevice(&device, btConnectedCb);
+}
+
+void btConnectedCb(char *deviceName)
+{
+    printf("Hura bt connected!\n");
+    xTaskCreate(&playSongsTask, "play song task", 8000, NULL, 1, NULL);
+}
+
+void playSongsTask(void *param)
+{
+    int stackMem = uxTaskGetStackHighWaterMark(NULL);
+    printf("stack = %d\n", stackMem);
+
+    int songsCount = 0;
+    Song *songs = getSongs(&songsCount);
+    printf("songs count = %d\n", songsCount);
+
+    btPlay(songs, songsCount);
+
+    while(true) vTaskDelay(1000);
 }

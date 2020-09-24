@@ -12,11 +12,13 @@ typedef struct
     esp_bd_addr_t *bt_address;
 } BtDevice;
 
+typedef  void (*connect_cb)(char*);
+
 void enableBluetooth(void);
 
 bool btIsConnected();
-BtDevice *btGetAvaibleDevices(int *deviceCount);
-bool btConnectToDevice(BtDevice *btDevice);
+BtDevice *btGetAvaibleDevices(int *deviceCount, connect_cb cb);
+void btConnectToDevice(BtDevice *btDevice, connect_cb cb);
 
 bool btPlay(Song *songsParam, uint8_t count);
 bool btPause();

@@ -25,8 +25,8 @@ void testPlayer();
 
 int app_main(void)
 {
-    // testDisplay();
-    testPlayer();
+    testDisplay();
+    // testPlayer();
     return 0;
 }
 
@@ -35,8 +35,10 @@ void testDisplay()
     menuDisplayMain();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     printf("pressing down button one times\n");
-    menuPressDown();
-    menuPressSelect();
+    menuPressDown(); // select bluetooth
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    menuPressSelect(); // open bluetooth
+    menuPressSelect(); // select device
 
     // vTaskDelay(3000 / portTICK_PERIOD_MS);
     // printf("pressing up button two times\n");
@@ -44,44 +46,44 @@ void testDisplay()
     // menuPressUp();
 }
 
-void testPlayer()
-{
-    printf("enabling bluetooth\n");
-    enableBluetooth();
+// void testPlayer()
+// {
+//     printf("enabling bluetooth\n");
+//     enableBluetooth();
 
-    enableBluetooth();
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
+//     enableBluetooth();
+//     vTaskDelay(30000 / portTICK_PERIOD_MS);
 
-    int songsCount = 0;
-    Song *songs = getSongs(&songsCount);
-    printf("songs count = %d\n", songsCount);
+//     int songsCount = 0;
+//     Song *songs = getSongs(&songsCount);
+//     printf("songs count = %d\n", songsCount);
 
-    BtDevice *devices = NULL;
-    int devicesCount = 0;
-    while (devicesCount == 0)
-    {
-        printf("coundn't find any devices\n");
-        devices = btGetAvaibleDevices(&devicesCount);
-    }
+//     BtDevice *devices = NULL;
+//     int devicesCount = 0;
+//     while (devicesCount == 0)
+//     {
+//         printf("coundn't find any devices\n");
+//         devices = btGetAvaibleDevices(&devicesCount);
+//     }
 
-    printf("device count = %d\n", devicesCount);
-    for (int i = 0; i < devicesCount; i++)
-        printf("device #%d - %s\n", i + 1, devices[i].name);
+//     printf("device count = %d\n", devicesCount);
+//     for (int i = 0; i < devicesCount; i++)
+//         printf("device #%d - %s\n", i + 1, devices[i].name);
 
-    printf("IsConnected = %d\n", btIsConnected());
+//     printf("IsConnected = %d\n", btIsConnected());
 
-    if (devicesCount > 0)
-    {
-        btConnectToDevice(&(devices[0]));
-    btPlay(songs, songsCount);
-    }
+//     if (devicesCount > 0)
+//     {
+//         btConnectToDevice(&(devices[0]), NULL);
+//         btPlay(songs, songsCount);
+//     }
 
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    printf("IsConnected = %d\n", btIsConnected());
+//     vTaskDelay(10000 / portTICK_PERIOD_MS);
+//     printf("IsConnected = %d\n", btIsConnected());
 
-    vTaskDelay(20000 / portTICK_PERIOD_MS);
-    printf("Pausing = %d\n", btPause());
+//     vTaskDelay(20000 / portTICK_PERIOD_MS);
+//     printf("Pausing = %d\n", btPause());
 
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    printf("Resuming = %d\n", btResume());
-}
+//     vTaskDelay(10000 / portTICK_PERIOD_MS);
+//     printf("Resuming = %d\n", btResume());
+// }

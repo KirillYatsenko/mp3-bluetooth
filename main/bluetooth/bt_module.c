@@ -128,16 +128,18 @@ static Song *songs;
 static int songsCount = 0;
 static int songsIndx = -1;
 static bool discovering = false;
+static connect_cb connectCb = NULL;
 
-BtDevice *btGetAvaibleDevices(int *deviceCount)
+BtDevice *btGetAvaibleDevices(int *deviceCount, connect_cb cb)
 {
+    ESP_LOGI(BT_CUSTOM_TAG, "btGetAvaibleDevices called");
+
+    connectCb = cb;
     avaibleDevicesCount = 0;
     discovering = 0;
 
     if (BtEnabled == false)
         enableBluetooth();
-
-    BtEnabled = true;
 
     ESP_LOGI(BT_AV_TAG, "Starting device discovery...");
     s_a2d_state = APP_AV_STATE_DISCOVERING;
@@ -151,15 +153,15 @@ BtDevice *btGetAvaibleDevices(int *deviceCount)
     return avaibleDevices;
 }
 
-bool btConnectToDevice(BtDevice *btDevice)
+void btConnectToDevice(BtDevice *btDevice, connect_cb cb)
 {
     ESP_LOGI(BT_AV_TAG, "Found a target device name %s", btDevice->name);
     s_a2d_state = APP_AV_STATE_CONNECTING;
     memcpy(s_peer_bda, btDevice->bt_address, ESP_BD_ADDR_LEN);
     ESP_LOGI(BT_AV_TAG, "Connecting ...");
 
+    connectCb = cb;
     esp_a2d_source_connect(s_peer_bda);
-    return true;
     // esp_bt_gap_cancel_discovery();
 }
 
@@ -284,6 +286,8 @@ static char *bda2str(esp_bd_addr_t bda, char *str, size_t size)
 
 void enableBluetooth(void)
 {
+    ESP_LOGI(BT_CUSTOM_TAG, "Enabling bluetooth...");
+
     // Initialize NVS.
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -327,9 +331,11 @@ void enableBluetooth(void)
     /* Bluetooth device name, connection mode and profile set up */
     bt_app_work_dispatch(bt_av_hdl_stack_evt, BT_APP_EVT_STACK_UP, NULL, 0, NULL);
 
-    // BtDevice *device = getConnectedDeviceFromNvs();
-    // if (device != NULL)
-    //     btConnectToDevice(device);
+    BtDevice *device = getConnectedDeviceFromNvs();
+    if (device != NULL)
+        btConnectToDevice(device, NULL);
+
+    BtEnabled = true;
 
 #if (CONFIG_BT_SSP_ENABLED == true)
     /* Set default parameters for Secure Simple Pairing */
@@ -708,6 +714,9 @@ static void bt_app_av_state_connecting(uint16_t event, void *param)
             esp_bt_gap_set_scan_mode(ESP_BT_NON_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
 
             saveConnectedDeviceToNvs("name", &s_peer_bda);
+
+            if (connectCb != NULL)
+                connectCb("toDo");
         }
         else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTED)
         {
@@ -941,8 +950,12 @@ static void bt_av_hdl_avrc_ct_evt(uint16_t event, void *p_param)
 
         if (rc->conn_stat.connected)
         {
+            printf("CONNECTED !!!!!!!!!!\n");
             // get remote supported event_ids of peer AVRCP Target
             esp_avrc_ct_send_get_rn_capabilities_cmd(APP_RC_CT_TL_GET_CAPS);
+
+          if (connectCb != NULL)
+                connectCb("toDo");
         }
         else
         {

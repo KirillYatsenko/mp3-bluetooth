@@ -94,6 +94,11 @@ void displayScrollUp()
         fillDisplay(menuItems[selectedItemIdx], NULL);
 }
 
+menuItem displayGetSelectedItem()
+{
+    return menuItems[selectedItemIdx];
+}
+
 uint8_t displayGetSelectedItemIndx()
 {
     return selectedItemIdx;
