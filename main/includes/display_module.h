@@ -16,7 +16,7 @@ void displaySelectNext();
 void displaySelectPrev();
 menuItem displayGetSelectedItem();
 uint8_t displayGetSelectedItemIndx();
+void displayClearHeaderArea();
 void displayClearItemsArea();
-
 
 #endif

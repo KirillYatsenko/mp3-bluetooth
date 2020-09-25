@@ -6,4 +6,5 @@ idf_component_register(SRCS
                             "display/u8g2_esp32_hal.c"
                             "display/display_module.c"
                             "menu/menu_module.c"
+                            "controller/controller_module.c"
                     INCLUDE_DIRS "." "includes/" )

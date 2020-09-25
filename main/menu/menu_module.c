@@ -41,6 +41,9 @@ static void openSongsMenu();
 
 void menuDisplayMain()
 {
+    displayClearItemsArea();
+    displayClearHeaderArea();
+
     int mainMenuItemsCount = 2;
 
     menuItem items[mainMenuItemsCount];
@@ -60,6 +63,7 @@ void menuDisplayMain()
 
 void menuPressSelect()
 {
+    ESP_LOGI(MENU_MODULE_TAG, "select button pressed");
     uint8_t selectedIndx = displayGetSelectedItemIndx();
 
     if (selectedMenu.menuItems[selectedIndx].onClick != NULL)
@@ -70,11 +74,13 @@ void menuPressSelect()
 
 void menuPressUp()
 {
+    ESP_LOGI(MENU_MODULE_TAG, "up button pressed");
     displaySelectPrev();
 }
 
 void menuPressDown()
 {
+    ESP_LOGI(MENU_MODULE_TAG, "down button pressed");
     displaySelectNext();
 }
 
@@ -166,8 +172,8 @@ static void openSongsMenu()
     for (int i = 0; i < songsCount; i++)
     {
         strcpy(items[i + 1].name, songs[i].d->d_name);
-        items[i].data = i;
-        items[i].onClick = playSong;
+        items[i+1].data = i;
+        items[i+1].onClick = playSong;
     }
 
     memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * songsCount + 1);
