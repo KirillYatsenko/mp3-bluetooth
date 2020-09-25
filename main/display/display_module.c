@@ -118,8 +118,8 @@ void displayClearItemsArea()
     ESP_LOGI(TAG, "displayClearItemsArea called");
     if (displayStarted)
     {
-        u8g2_DrawStr(&u8g2, 2, 19, "              ");
-        u8g2_DrawStr(&u8g2, 2, 27, "              ");
+        u8g2_DrawStr(&u8g2, 2, 19, "                ");
+        u8g2_DrawStr(&u8g2, 2, 27, "                ");
         u8g2_SendBuffer(&u8g2);
     }
 }

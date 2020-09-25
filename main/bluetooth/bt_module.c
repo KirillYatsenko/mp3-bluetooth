@@ -107,8 +107,6 @@ static void bt_app_av_state_disconnecting(uint16_t event, void *param);
 
 static void playNextSong();
 static void saveToAvaibleDevice(char *deviceName, esp_bd_addr_t *address);
-static BtDevice *getConnectedDeviceFromNvs();
-static void saveConnectedDeviceToNvs(char *deviceName, esp_bd_addr_t *address);
 
 static esp_bd_addr_t s_peer_bda = {0};
 static uint8_t s_peer_bdname[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
@@ -200,61 +198,6 @@ bool btResume()
     return true;
 }
 
-static void saveConnectedDeviceToNvs(char *deviceName, esp_bd_addr_t *address)
-{
-    printf("saveConnectedDeviceToNvs called, deviceName = %s\n", deviceName);
-
-    nvs_handle handle;
-    ESP_ERROR_CHECK(nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle));
-
-    ESP_ERROR_CHECK(nvs_set_blob(handle, NVS_ADDRESS_KEY, (void *)address, sizeof(esp_bd_addr_t)));
-    ESP_ERROR_CHECK(nvs_set_str(handle, NVS_DEVICE_NAME_KEY, deviceName));
-    ESP_ERROR_CHECK(nvs_commit(handle));
-}
-
-static BtDevice *getConnectedDeviceFromNvs()
-{
-    ESP_LOGI(BT_CUSTOM_TAG, "getConnectedDeviceFromNvs called");
-
-    nvs_handle handle;
-    ESP_ERROR_CHECK(nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle));
-
-    char deviceName[50];
-    size_t deviceNameLength = 50;
-
-    esp_bd_addr_t address;
-    size_t addressSize = sizeof(esp_bd_addr_t);
-
-    esp_err_t resultAddress = nvs_get_blob(handle, NVS_ADDRESS_KEY, (void *)&address, &addressSize);
-    nvs_get_str(handle, NVS_DEVICE_NAME_KEY, deviceName, &deviceNameLength);
-
-    switch (resultAddress)
-    {
-    case ESP_ERR_NOT_FOUND:
-    case ESP_ERR_NVS_NOT_FOUND:
-        ESP_LOGI(BT_CUSTOM_TAG, "no saved bt devices in nvs");
-        return NULL;
-        break;
-    case ESP_OK:
-    {
-        BtDevice *btDevice = (BtDevice *)malloc(sizeof(BtDevice));
-
-        btDevice->bt_address = (esp_bd_addr_t *)malloc(sizeof(esp_bd_addr_t));
-        memcpy(btDevice->bt_address, address, sizeof(esp_bd_addr_t));
-
-        btDevice->name = (char *)malloc(deviceNameLength);
-        strcpy(btDevice->name, deviceName);
-
-        return btDevice;
-    }
-    default:
-        ESP_LOGE(BT_CUSTOM_TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(resultAddress));
-        break;
-    }
-
-    return NULL;
-}
-
 static void saveToAvaibleDevice(char *deviceName, esp_bd_addr_t *address)
 {
     if (avaibleDevicesCount == MAX_AVAIBLE_DEVICES)
@@ -334,10 +277,6 @@ void enableBluetooth(void)
     /* Bluetooth device name, connection mode and profile set up */
     bt_app_work_dispatch(bt_av_hdl_stack_evt, BT_APP_EVT_STACK_UP, NULL, 0, NULL);
 
-    BtDevice *device = getConnectedDeviceFromNvs();
-    if (device != NULL)
-        btConnectToDevice(device, NULL);
-
     BtEnabled = true;
 
 #if (CONFIG_BT_SSP_ENABLED == true)
@@ -415,8 +354,7 @@ static bool get_name_from_eir(uint8_t *eir, uint8_t *bdname, uint8_t *bdname_len
 
 static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
 {
-    printf("filter is called\n");
-
+    ESP_LOGI(BT_CUSTOM_TAG, "filter_inquiry_scan_result is called");
     char bda_str[18];
     uint32_t cod = 0;
     int32_t rssi = -129; /* invalid value */
@@ -457,17 +395,7 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     {
         get_name_from_eir(eir, s_peer_bdname, NULL);
         saveToAvaibleDevice((char *)s_peer_bdname, &(param->disc_res.bda));
-
-        // if (strcmp((char *)s_peer_bdname, "AM61") != 0)
-        // {
-        //     return;
-        // }
-
-        // ESP_LOGI(BT_AV_TAG, "Found a target device, address %s, name %s", bda_str, s_peer_bdname);
-        // s_a2d_state = APP_AV_STATE_DISCOVERED;
-        // memcpy(s_peer_bda, param->disc_res.bda, ESP_BD_ADDR_LEN);
-        // ESP_LOGI(BT_AV_TAG, "Cancel device discovery ...");
-        // esp_bt_gap_cancel_discovery();
+       
     }
 }
 
@@ -598,12 +526,6 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
         /* set discoverable and connectable mode */
         esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 
-        /* start device discovery */
-
-        // ESP_LOGI(BT_AV_TAG, "Starting device discovery...");
-        // s_a2d_state = APP_AV_STATE_DISCOVERING;
-        // esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
-
         /* create and start heart beat timer */
         do
         {
@@ -639,8 +561,8 @@ static int32_t bt_app_a2d_data_cb(uint8_t *data, int32_t len)
         playNextSong();
         lseek(currentSongDescriptor, 0x2C, SEEK_SET);                 //skip wav-header 44bytesт
         readSize = read(currentSongDescriptor, data, len - readSize); //read up
-        
-        if(nextSongCb != NULL)
+
+        if (nextSongCb != NULL)
             nextSongCb(songsIndx);
     }
 
@@ -718,8 +640,6 @@ static void bt_app_av_state_connecting(uint16_t event, void *param)
             s_a2d_state = APP_AV_STATE_CONNECTED;
             s_media_state = APP_AV_MEDIA_STATE_IDLE;
             esp_bt_gap_set_scan_mode(ESP_BT_NON_CONNECTABLE, ESP_BT_NON_DISCOVERABLE);
-
-            saveConnectedDeviceToNvs("name", &s_peer_bda);
 
             if (connectCb != NULL)
                 connectCb("toDo");
@@ -956,11 +876,15 @@ static void bt_av_hdl_avrc_ct_evt(uint16_t event, void *p_param)
 
         if (rc->conn_stat.connected)
         {
-            printf("CONNECTED !!!!!!!!!!\n");
+            ESP_LOGI(BT_CUSTOM_TAG, "device connected");
+            esp_bt_gap_cancel_discovery();
+
+            s_a2d_state = APP_AV_STATE_CONNECTED;
+
             // get remote supported event_ids of peer AVRCP Target
             esp_avrc_ct_send_get_rn_capabilities_cmd(APP_RC_CT_TL_GET_CAPS);
 
-          if (connectCb != NULL)
+            if (connectCb != NULL)
                 connectCb("toDo");
         }
         else

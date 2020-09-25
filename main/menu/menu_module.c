@@ -38,7 +38,6 @@ static void openBluetoothMenu();
 static void connectToBdDeviceMenu();
 static void openSongsMenu();
 
-
 void menuDisplayMain()
 {
     displayClearItemsArea();
@@ -91,6 +90,9 @@ static void openBluetoothMenu()
 
     int devicesCount = 0;
     devices = btGetAvaibleDevices(&devicesCount, btConnectedCb);
+
+    if (btIsConnected() == true)
+        return;
 
     menuItem items[devicesCount];
 
@@ -172,8 +174,8 @@ static void openSongsMenu()
     for (int i = 0; i < songsCount; i++)
     {
         strcpy(items[i + 1].name, songs[i].d->d_name);
-        items[i+1].data = i;
-        items[i+1].onClick = playSong;
+        items[i + 1].data = i;
+        items[i + 1].onClick = playSong;
     }
 
     memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * songsCount + 1);
