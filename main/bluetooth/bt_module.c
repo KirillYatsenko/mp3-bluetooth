@@ -128,7 +128,9 @@ static Song *songs;
 static int songsCount = 0;
 static int songsIndx = -1;
 static bool discovering = false;
+
 static connect_cb connectCb = NULL;
+static nextSong_cb nextSongCb = NULL;
 
 BtDevice *btGetAvaibleDevices(int *deviceCount, connect_cb cb)
 {
@@ -165,11 +167,12 @@ void btConnectToDevice(BtDevice *btDevice, connect_cb cb)
     // esp_bt_gap_cancel_discovery();
 }
 
-bool btPlay(Song *songsParam, uint8_t count)
+bool btPlay(Song *songsParam, uint8_t count, uint8_t startPlayIndx, nextSong_cb nextSong_cb)
 {
     songs = songsParam;
     songsCount = count;
-    songsIndx = -1;
+    songsIndx = startPlayIndx;
+    nextSongCb = nextSong_cb;
 
     playNextSong();
 
@@ -636,6 +639,9 @@ static int32_t bt_app_a2d_data_cb(uint8_t *data, int32_t len)
         playNextSong();
         lseek(currentSongDescriptor, 0x2C, SEEK_SET);                 //skip wav-header 44bytesт
         readSize = read(currentSongDescriptor, data, len - readSize); //read up
+        
+        if(nextSongCb != NULL)
+            nextSongCb(songsIndx);
     }
 
     return len;

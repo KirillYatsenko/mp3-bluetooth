@@ -12,7 +12,8 @@ typedef struct
     esp_bd_addr_t *bt_address;
 } BtDevice;
 
-typedef  void (*connect_cb)(char*);
+typedef void (*connect_cb)(char *);
+typedef void (*nextSong_cb)(uint8_t);
 
 void enableBluetooth(void);
 
@@ -20,7 +21,7 @@ bool btIsConnected();
 BtDevice *btGetAvaibleDevices(int *deviceCount, connect_cb cb);
 void btConnectToDevice(BtDevice *btDevice, connect_cb cb);
 
-bool btPlay(Song *songsParam, uint8_t count);
+bool btPlay(Song *songsParam, uint8_t count, uint8_t startPlayIndx, nextSong_cb nextSong_cb);
 bool btPause();
 bool btResume();
 

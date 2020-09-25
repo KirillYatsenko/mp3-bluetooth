@@ -21,7 +21,7 @@ const char *TAG = "Display";
 static u8g2_t u8g2; // a structure which will contain all the data for one display
 
 static menuItem *menuItems;
-static uint8_t itemsCount;
+static uint8_t menuItemsCount;
 static uint8_t selectedItemIdx = 0;
 static bool displayStarted = false;
 
@@ -55,40 +55,41 @@ void displayPrintItems(menuItem *items, uint8_t itemsCount)
     menuItems = (menuItem *)malloc(sizeof(menuItem) * itemsCount);
     memcpy(menuItems, items, sizeof(menuItem) * itemsCount);
 
-    itemsCount = itemsCount;
+    menuItemsCount = itemsCount;
     selectedItemIdx = 0;
 
-    if (itemsCount > 1)
+    if (menuItemsCount > 1)
         fillDisplay(items[0], &(items[1]));
     else
         fillDisplay(items[0], NULL);
 }
 
-void displayScrollDown()
+void displaySelectNext()
 {
-    ESP_LOGI(TAG, "displayScrollDown called\n");
+    ESP_LOGI(TAG, "displaySelectNext called\n");
 
-    if (selectedItemIdx + 1 == itemsCount) // there is no items to scroll down
+    if (selectedItemIdx + 1 == menuItemsCount) // there is no items to scroll down
         return;
 
     selectedItemIdx++;
 
-    if (selectedItemIdx != itemsCount + 1)
+    printf("selectedItemIdx = %d, menuItemsCount = %d\n", selectedItemIdx, menuItemsCount);
+    if (selectedItemIdx != menuItemsCount + 1)
         fillDisplay(menuItems[selectedItemIdx], &(menuItems[selectedItemIdx + 1]));
     else
         fillDisplay(menuItems[selectedItemIdx], NULL);
 }
 
-void displayScrollUp()
+void displaySelectPrev()
 {
-    ESP_LOGI(TAG, "displayScrollUp called\n");
+    ESP_LOGI(TAG, "displaySelectPrev called\n");
 
     if (selectedItemIdx == 0) // there is no items to scroll up
         return;
 
     selectedItemIdx--;
 
-    if (selectedItemIdx != itemsCount + 1)
+    if (selectedItemIdx != menuItemsCount + 1)
         fillDisplay(menuItems[selectedItemIdx], &(menuItems[selectedItemIdx + 1]));
     else
         fillDisplay(menuItems[selectedItemIdx], NULL);

@@ -12,8 +12,8 @@ typedef struct
 
 void displayPrintHeader(char *header);
 void displayPrintItems(menuItem *items, uint8_t itemsCount);
-void displayScrollDown();
-void displayScrollUp();
+void displaySelectNext();
+void displaySelectPrev();
 menuItem displayGetSelectedItem();
 uint8_t displayGetSelectedItemIndx();
 void displayClearItemsArea();
