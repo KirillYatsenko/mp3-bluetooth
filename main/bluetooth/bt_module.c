@@ -106,6 +106,7 @@ static void bt_app_av_state_connected(uint16_t event, void *param);
 static void bt_app_av_state_disconnecting(uint16_t event, void *param);
 
 static void playNextSong();
+static void playCurrentSong();
 static void saveToAvaibleDevice(char *deviceName, esp_bd_addr_t *address);
 
 static esp_bd_addr_t s_peer_bda = {0};
@@ -172,7 +173,7 @@ bool btPlay(Song *songsParam, uint8_t count, uint8_t startPlayIndx, nextSong_cb 
     songsIndx = startPlayIndx;
     nextSongCb = nextSong_cb;
 
-    playNextSong();
+    playCurrentSong();
 
     return true;
 }
@@ -302,6 +303,12 @@ static void playNextSong()
     if (++songsIndx == songsCount)
         songsIndx = 0;
 
+    playCurrentSong();
+}
+
+static void playCurrentSong()
+{
+    close(currentSongDescriptor);
     currentSongDescriptor = open(songs[songsIndx].fullpath, O_RDONLY);
     printf("SAMPLE = %d\n", currentSongDescriptor);
 
@@ -395,7 +402,6 @@ static void filter_inquiry_scan_result(esp_bt_gap_cb_param_t *param)
     {
         get_name_from_eir(eir, s_peer_bdname, NULL);
         saveToAvaibleDevice((char *)s_peer_bdname, &(param->disc_res.bda));
-       
     }
 }
 
@@ -717,13 +723,13 @@ static void bt_app_av_media_proc(uint16_t event, void *param)
     {
         if (event == BT_APP_HEART_BEAT_EVT)
         {
-            if (++s_intv_cnt >= 10)
-            {
-                ESP_LOGI(BT_AV_TAG, "a2dp media stopping...");
-                esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_STOP);
-                s_media_state = APP_AV_MEDIA_STATE_STOPPING;
-                s_intv_cnt = 0;
-            }
+            // if (++s_intv_cnt >= 10)
+            // {
+            //     ESP_LOGI(BT_AV_TAG, "a2dp media stopping...");
+            //     esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_STOP);
+            //     s_media_state = APP_AV_MEDIA_STATE_STOPPING;
+            //     s_intv_cnt = 0;
+            // }
         }
         break;
     }

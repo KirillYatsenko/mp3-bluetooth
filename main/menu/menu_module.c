@@ -37,6 +37,7 @@ static void playSong();
 static void openBluetoothMenu();
 static void connectToBdDeviceMenu();
 static void openSongsMenu();
+static void openBtNotFoundMenu();
 
 void menuDisplayMain()
 {
@@ -65,6 +66,11 @@ void menuPressSelect()
     ESP_LOGI(MENU_MODULE_TAG, "select button pressed");
     uint8_t selectedIndx = displayGetSelectedItemIndx();
 
+    ESP_LOGI(MENU_MODULE_TAG, "menuPressSelect selectedIndx = %d", selectedIndx);
+
+    menuItem item = selectedMenu.menuItems[selectedIndx];
+    printf("item name = %s\n", item.name);
+
     if (selectedMenu.menuItems[selectedIndx].onClick != NULL)
         selectedMenu.menuItems[selectedIndx].onClick();
     else
@@ -85,6 +91,12 @@ void menuPressDown()
 
 static void openBluetoothMenu()
 {
+    if (btIsConnected() == true)
+    {
+        btConnectedCb("toDo");
+        return;
+    }
+
     displayClearItemsArea();
     displayPrintHeader("Scanning...");
 
@@ -93,6 +105,12 @@ static void openBluetoothMenu()
 
     if (btIsConnected() == true)
         return;
+
+    if (devicesCount == 0)
+    {
+        openBtNotFoundMenu();
+        return;
+    }
 
     menuItem items[devicesCount];
 
@@ -113,6 +131,29 @@ static void openBluetoothMenu()
 
     displayPrintHeader("Devices");
     displayPrintItems(items, devicesCount);
+}
+
+static void openBtNotFoundMenu()
+{
+    displayClearItemsArea();
+    displayPrintHeader("Scan again");
+
+    uint8_t btConnectedMenuItemsCount = 2;
+    menuItem items[btConnectedMenuItemsCount];
+
+    strcpy(selectedMenu.name, "BtNotFound");
+    selectedMenu.menuItemsCount = btConnectedMenuItemsCount;
+    selectedMenu.menuItems = (menuItem *)realloc(selectedMenu.menuItems, sizeof(menuItem) * btConnectedMenuItemsCount);
+
+    strcpy(items[0].name, "Scan");
+    items[0].onClick = openBluetoothMenu;
+
+    strcpy(items[1].name, "Back");
+    items[1].onClick = menuDisplayMain;
+
+    memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * btConnectedMenuItemsCount);
+
+    displayPrintItems(items, btConnectedMenuItemsCount);
 }
 
 static void connectToBdDeviceMenu()
@@ -149,6 +190,7 @@ void openBtConnectedTask(void *deviceName)
     memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * btConnectedMenuItemsCount);
 
     displayPrintItems(items, btConnectedMenuItemsCount);
+
     vTaskDelete(NULL);
 }
 
@@ -165,7 +207,7 @@ static void openSongsMenu()
     printf("Songs found=%d\n", songsCount);
 
     strcpy(selectedMenu.name, "Songs");
-    selectedMenu.menuItemsCount = songsCount;
+    selectedMenu.menuItemsCount = songsCount + 1;
     selectedMenu.menuItems = (menuItem *)realloc(selectedMenu.menuItems, sizeof(menuItem) * (songsCount + 1));
 
     strcpy(items[0].name, "Back");
@@ -178,7 +220,7 @@ static void openSongsMenu()
         items[i + 1].onClick = playSong;
     }
 
-    memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * songsCount + 1);
+    memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * (songsCount + 1));
     displayPrintItems(items, songsCount + 1);
 }
 
@@ -190,7 +232,10 @@ static void playSong()
 
 void playSongsTask(void *param)
 {
+    ESP_LOGI(MENU_MODULE_TAG, "playSongsTask called");
     uint8_t songIndx = displayGetSelectedItem().data;
+    printf("songIndx = %d\n", songIndx);
+
     btPlay(songs, songsCount, songIndx, nextSongCb);
 
     while (true)
@@ -199,5 +244,9 @@ void playSongsTask(void *param)
 
 void nextSongCb(uint8_t songIndx)
 {
-    displaySelectNext();
+    printf("songsIndx = %d, songCount = %d\n", songIndx, songsCount);
+    if(songIndx == 0)
+        displaySelectIndx(1);
+    else
+        displaySelectNext();
 }

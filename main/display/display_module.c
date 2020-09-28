@@ -72,7 +72,7 @@ void displaySelectNext()
     selectedItemIdx++;
 
     printf("selectedItemIdx = %d, menuItemsCount = %d\n", selectedItemIdx, menuItemsCount);
-    if (selectedItemIdx != menuItemsCount + 1)
+    if (selectedItemIdx + 1 != menuItemsCount)
         fillDisplay(menuItems[selectedItemIdx], &(menuItems[selectedItemIdx + 1]));
     else
         fillDisplay(menuItems[selectedItemIdx], NULL);
@@ -86,6 +86,16 @@ void displaySelectPrev()
         return;
 
     selectedItemIdx--;
+
+    if (selectedItemIdx != menuItemsCount + 1)
+        fillDisplay(menuItems[selectedItemIdx], &(menuItems[selectedItemIdx + 1]));
+    else
+        fillDisplay(menuItems[selectedItemIdx], NULL);
+}
+
+void displaySelectIndx(uint8_t indx)
+{
+    selectedItemIdx = indx;
 
     if (selectedItemIdx != menuItemsCount + 1)
         fillDisplay(menuItems[selectedItemIdx], &(menuItems[selectedItemIdx + 1]));

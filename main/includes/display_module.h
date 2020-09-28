@@ -14,6 +14,7 @@ void displayPrintHeader(char *header);
 void displayPrintItems(menuItem *items, uint8_t itemsCount);
 void displaySelectNext();
 void displaySelectPrev();
+void displaySelectIndx(uint8_t indx);
 menuItem displayGetSelectedItem();
 uint8_t displayGetSelectedItemIndx();
 void displayClearHeaderArea();
