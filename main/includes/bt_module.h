@@ -20,6 +20,7 @@ void enableBluetooth(void);
 bool btIsConnected();
 BtDevice *btGetAvaibleDevices(int *deviceCount, connect_cb cb);
 void btConnectToDevice(BtDevice *btDevice, connect_cb cb);
+bool btIsPaused();
 
 bool btPlay(Song *songsParam, uint8_t count, uint8_t startPlayIndx, nextSong_cb nextSong_cb);
 bool btPause();

@@ -183,6 +183,11 @@ bool btIsConnected()
     return s_a2d_state == APP_AV_STATE_CONNECTED;
 }
 
+bool btIsPaused()
+{
+    return s_media_state == APP_AV_MEDIA_STATE_SUSPENDING;
+}
+
 bool btPause()
 {
     esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_SUSPEND);

@@ -27,17 +27,23 @@ static menu selectedMenu;
 static BtDevice *devices;
 static Song *songs;
 static int songsCount;
+static int currentSongIndx;
 
 void btConnectedCb(char *deviceName);
 void nextSongCb(uint8_t songIndx);
 void openBtConnectedTask(void *param);
-void playSongsTask(void *param);
+void openPlayerMenuTask();
+void playNextSong();
+void playNextSongTask();
+void playPrevSong();
+void playPrevSongTask();
+void playSong(uint8_t songIndx);
 
-static void playSong();
 static void openBluetoothMenu();
 static void connectToBdDeviceMenu();
 static void openSongsMenu();
 static void openBtNotFoundMenu();
+static void openPlayerMenu();
 
 void menuDisplayMain()
 {
@@ -213,30 +219,104 @@ static void openSongsMenu()
     strcpy(items[0].name, "Back");
     items[0].onClick = menuDisplayMain;
 
-    for (int i = 0; i < songsCount; i++)
+    for (uint8_t i = 0; i < songsCount; i++)
     {
         strcpy(items[i + 1].name, songs[i].d->d_name);
         items[i + 1].data = i;
-        items[i + 1].onClick = playSong;
+        items[i + 1].onClick = openPlayerMenu;
     }
 
     memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * (songsCount + 1));
     displayPrintItems(items, songsCount + 1);
 }
 
-static void playSong()
+static void openPlayerMenu()
 {
-    ESP_LOGI(MENU_MODULE_TAG, "playSongs called");
-    xTaskCreate(&playSongsTask, "playSong", 8000, NULL, 1, NULL);
+    ESP_LOGI(MENU_MODULE_TAG, "openPlayerMenu called");
+    xTaskCreate(&openPlayerMenuTask, "openPlayerMenu", 8000, NULL, 1, NULL);
 }
 
-void playSongsTask(void *param)
+void openPlayerMenuTask()
 {
-    ESP_LOGI(MENU_MODULE_TAG, "playSongsTask called");
+    displayClearItemsArea();
+    displayClearHeaderArea();
+
     uint8_t songIndx = displayGetSelectedItem().data;
+
+    uint8_t btConnectedMenuItemsCount = 4;
+    menuItem items[btConnectedMenuItemsCount];
+
+    strcpy(selectedMenu.name, "playerMenu");
+    selectedMenu.menuItemsCount = btConnectedMenuItemsCount;
+    selectedMenu.menuItems = (menuItem *)realloc(selectedMenu.menuItems, sizeof(menuItem) * btConnectedMenuItemsCount);
+
+    strcpy(items[0].name, "Back");
+    items[0].onClick = openSongsMenu;
+
+    strcpy(items[1].name, "Pause");
+    items[1].onClick = btPause;
+
+    strcpy(items[2].name, "Next");
+    items[2].onClick = playNextSong;
+
+    strcpy(items[3].name, "Prev");
+    items[3].onClick = playPrevSong;
+
+    memcpy(selectedMenu.menuItems, items, sizeof(menuItem) * btConnectedMenuItemsCount);
+
+    displayPrintHeader(songs[songIndx].d->d_name);
+    displayPrintItems(items, btConnectedMenuItemsCount);
+
+    playSong(songIndx);
+}
+
+void playNextSong()
+{
+    ESP_LOGI(MENU_MODULE_TAG, "playNextSong called");
+    xTaskCreate(&playNextSongTask, "playNextSongTask", 8000, NULL, 1, NULL);
+}
+
+void playNextSongTask()
+{
+    ESP_LOGI(MENU_MODULE_TAG, "playNextSongTask called currentSongIndx = %d", currentSongIndx);
+
+    if (currentSongIndx == songsCount - 1)
+        currentSongIndx = 0;
+    else
+        currentSongIndx++;
+
+    displayPrintHeader(songs[currentSongIndx].d->d_name);
+    playSong(currentSongIndx);
+}
+
+void playPrevSong()
+{
+    ESP_LOGI(MENU_MODULE_TAG, "playPrevSong called");
+    xTaskCreate(&playNextSongTask, "playPrevSong", 8000, NULL, 1, NULL);
+}
+
+void playPrevSongTask()
+{
+    ESP_LOGI(MENU_MODULE_TAG, "playPrevSongTask called currentSongIndx = %d", currentSongIndx);
+
+    if (currentSongIndx == 0)
+        currentSongIndx = songsCount - 1;
+    else
+        currentSongIndx--;
+
+    displayPrintHeader(songs[currentSongIndx].d->d_name);
+    playSong(currentSongIndx);
+}
+
+void playSong(uint8_t songIndx)
+{
+    ESP_LOGI(MENU_MODULE_TAG, "playSongsTask called songIndx = %d", songIndx);
     printf("songIndx = %d\n", songIndx);
 
     btPlay(songs, songsCount, songIndx, nextSongCb);
+
+    if (btIsPaused())
+        btResume();
 
     while (true)
         vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -244,9 +324,13 @@ void playSongsTask(void *param)
 
 void nextSongCb(uint8_t songIndx)
 {
-    printf("songsIndx = %d, songCount = %d\n", songIndx, songsCount);
-    if(songIndx == 0)
-        displaySelectIndx(1);
-    else
-        displaySelectNext();
+    ESP_LOGI(MENU_MODULE_TAG, "nextSongCb is called songIndx = %d songsCount = %d", songIndx, songsCount);
+
+    currentSongIndx = songIndx;
+
+    if (strcmp("playerMenu", selectedMenu.name) == 0)
+    {
+        displayClearHeaderArea();
+        displayPrintHeader(songs[songIndx].d->d_name);
+    }
 }
